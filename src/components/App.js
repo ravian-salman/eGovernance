@@ -1,22 +1,23 @@
 import React, {Component} from 'react'
 import Web3 from 'web3'
 import Navbar from './Navbar'
-import Main from './Main'
-import DappToken from '../abis/DappToken.json'
-import FuncToken from '../abis/FuncToken.json'
-import TokenFarming from '../abis/TokenFarming.json'
+import Main from './Main.js'
+import eVotingToken from '../abis/eVotingToken.json'
+import VotingContract from '../abis/VotingContract.json'
 
 class App extends Component {
     constructor(props) {
         super(props)
         this.state = {
             account: '0x0',
-            dappToken: {},
-            funcToken: {},
-            tokenFarming: {},
-            dappTokenBalance: '0',
-            funcTokenBalance: '0',
-            stakingBalance: '0',
+            count: '0',
+            eToken: {},
+            vContract: {},
+            eVotingTokenBalance: '0',
+            proposalName: '',
+            proposalDesc: '',
+            proposalAddress: '0x0',
+            proposalList: [],
             loading: true
         }
     }    
@@ -53,80 +54,89 @@ class App extends Component {
         console.log(networkID)
 
         // Load FuncToken 
-        const funcTokenData = FuncToken.networks[networkID]
-        if(funcTokenData) {
+        const eVotingTokenData = eVotingToken.networks[networkID]
+        if(eVotingTokenData) {
             // Get web3 version of funcToken SmartContract
-            const funcToken = await new web3.eth.Contract(
-                FuncToken.abi, funcTokenData.address
+            const eToken = await new web3.eth.Contract(
+                eVotingToken.abi, eVotingTokenData.address
             )
-            this.setState({ funcToken })
-            console.log(funcToken)
-            let funcTokenBalance = await funcToken.methods.balanceOf(
+            this.setState({ eToken })
+            console.log(eToken)   
+            let eVotingTokenBalance = await eToken.methods.balanceFor(
                 this.state.account).call()
-                console.log(funcTokenBalance.toString())
-            this.setState({ funcTokenBalance: funcTokenBalance.toString() })
+                console.log(eVotingTokenBalance.toString())
+            this.setState({ eVotingTokenBalance: eVotingTokenBalance.toString() })
    
         } else {
-            window.alert('FuncToken contract is not deployed on this network')
+            window.alert('eVotingToken contract is not deployed on this network')
         }
 
-        // Load DappToken 
-        const dappTokenData = DappToken.networks[networkID]
-        if(dappTokenData) {
-            // Get web3 version of funcToken SmartContract
-            const dappToken = await new web3.eth.Contract(
-                DappToken.abi, dappTokenData.address
-            )
-            this.setState({ dappToken })
-            console.log(dappToken)
-            let dappTokenBalance = await dappToken.methods.balanceOf(
-                this.state.account).call()
-                console.log(dappTokenBalance.toString())
-            this.setState({ dappTokenBalance: dappTokenBalance.toString() })
-   
-        } else {
-            window.alert('DappToken contract is not deployed on this network')
-        }        
-
+       
         // Load TokenFarming 
-        const tokenFarmingData = TokenFarming.networks[networkID]
-        if(tokenFarmingData) {
+        const VotingContractData = VotingContract.networks[networkID]
+        if(VotingContractData) {
             // Get web3 version of funcToken SmartContract
-            const tokenFarming = await new web3.eth.Contract(
-                TokenFarming.abi, tokenFarmingData.address
+            const vContract = await new web3.eth.Contract(
+                VotingContract.abi, VotingContractData.address
             )
-            this.setState({ tokenFarming })
-            console.log(tokenFarming)
-            let stakingBalance = await tokenFarming.methods.stakingBalance(
-                this.state.account).call()
-                console.log(stakingBalance.toString())
-            this.setState({ stakingBalance: stakingBalance.toString() })
-   
-        } else {
-            window.alert('TokenFarming contract is not deployed on this network')
+            this.setState({ vContract })
+            console.log(vContract)
+    } else {
+            window.alert('Voting contract is not deployed on this network')
         }
 
         this.setState({ loading:false })
     }
-    // for staking
-    stakeTokens = (amount) => {
+
+    // // For getting ProposalList 
+    // getProposalList = (proposalList) => {
+    //     for (var i = 0; i < this.state.vContract.methods.proposalAddress.length; i++) {
+    //     proposalList.push(this.state.vContract.methods.proposalAddress(i).call())
+    //     }
+    //     this.setState({ proposalList })
+    //     console.log(proposalList)
+    // }
+
+    // For Registering Voters
+    registerVoter = () => {
         this.setState({ loading: true })
-        this.state.funcToken.methods.approve(this.state.tokenFarming._address, amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
-          this.state.tokenFarming.methods.stakeTokens(amount).send({ from: this.state.account }).on('transactionHash', (hash) => {
+        this.state.vContract.methods.registerVoter().send({ from: this.state.account }).on('transactionHash', (hash) => {
             this.setState({ loading: false })
           })
-        })
       }
-    //For Unstaking
-    unStakeTokens = (amount) => {
+    //For Registering Proposals
+    registerProposal = () => {
         this.setState({ loading: true })
-        this.state.tokenFarming.methods.unStakeTokens().send({ from: this.state.account }).on('transactionHash', (hash) => {
-          this.setState({ loading: false })
-        })
-    }
-    
-    
+        this.state.vContract.methods.registerProposal(this.state.proposalName, this.state.proposalDesc).send({ from: this.state.account }).on('transactionHash', (hash) => {
+            this.setState({ loading: false })
+          })
+      }
+      
+    //For voteInFavour Proposals
+    voteInFavour = (proposalAddress) => {
+        this.setState({ loading: true })
+        this.state.vContract.methods.voteInFavour(proposalAddress).send({ from: this.state.account }).on('transactionHash', (hash) => {
+            this.setState({ loading: false })
+          })
+      }
 
+    //For Rejection Voting
+    voteInRejection = (proposalAddress) => {
+        this.setState({ loading: true })
+        this.state.vContract.methods.voteInRejection(proposalAddress).send({ from: this.state.account }).on('transactionHash', (hash) => {
+            this.setState({ loading: false })
+          })
+      }      
+      
+    //For Calculating Winners
+    Winner = () => {
+        this.setState({ loading: true })
+        this.state.vContract.methods.winningProposal().send({ from: this.state.account }).on('transactionHash', (hash) => {
+            this.setState({ loading: false })
+          })
+      }    
+      
+      
     render() {
         let pageContent 
         if(this.state.loading) {
@@ -134,11 +144,12 @@ class App extends Component {
         } else {
             // Load data into Main Component
             pageContent = <Main 
-                funcTokenBalance = {this.state.funcTokenBalance}
-                dappTokenBalance = {this.state.dappTokenBalance}
-                stakingBalance = {this.state.stakingBalance}
-                stakeTokens = {this.stakeTokens}
-                unStakeTokens = {this.unStakeTokens}
+                registerVoter = {this.registerVoter}
+                registerProposal = {this.registerProposal}
+                voteInFavour = {this.voteInFavour}
+                voteInRejection = {this.voteInRejection}
+                Winner = {this.Winner}
+                getProposalList = {this.getProposalList}
             />
         }
         return (
