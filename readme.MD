@@ -31,7 +31,7 @@
     <td> TelGates Inc. </td>
   </tr>
  </table>
-SmartContract can be deployed on any network. DApp is being developed and will be released soon. 
+SmartContract can be deployed on any network. DApp is developed and released now. 
 Pull requests are always welcome. If you found any issues while using our smartContract, please report using the Issues tab on Github.
 
 <h3> Questions or Concerns? </h3>
